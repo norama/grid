@@ -28,7 +28,7 @@ public class GridManager {
 
     private static final String DF_SESSION_TOKEN_NAME = "X-DreamFactory-Session-Token";
 
-    private static final String HOST = "http://127.0.0.1:81";
+    private static final String HOST = ApplicationContext.getDreamFactoryUrl();
     private static final String ROOT = "/api/v2";
 
     private static final String SESSION = "/user/session";
