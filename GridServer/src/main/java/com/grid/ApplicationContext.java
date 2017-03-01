@@ -23,7 +23,7 @@ public class ApplicationContext {
     }
     
     static public String getDreamFactoryUrl() {
-        return lookup("dreamfactory/url", "http://127.0.0.1:82");
+        return lookup("dreamfactory/url", "http://127.0.0.1:81");
     }
     
     static private <T> T lookup(String name, T defval) {

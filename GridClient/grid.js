@@ -183,7 +183,7 @@
             this.$mount('#grid'); 
         }, response => { 
             console.dir(response); 
-            showError('error: '+response); 
+            showError(response.body.message); 
         });
          
       },
