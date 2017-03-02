@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context path="/Grid">
+  <Environment description="reservation expiration time (mins)" name="settings/expiration" override="false" type="java.lang.Integer" value="3"/>
+  <Environment description="reservation expiration scanning period (mins)" name="settings/expirationScanPeriod" override="false" type="java.lang.Integer" value="1"/>
+  <Environment description="DreamFactory URL" name="dreamfactory/url" override="false" type="java.lang.String" value="http://35.187.14.107"/>
+
+</Context>

@@ -1,6 +1,7 @@
 
 
-    const SERVICE = 'http://localhost:8086/Grid/webresources/app';
+    //const SERVICE = 'http://localhost:8086/Grid/webresources/app';
+    const SERVICE = 'http://env-3633436.j.layershift.co.uk/Grid/webresources/app';
     
     const NEXT = {
             'free': 'reserve',
