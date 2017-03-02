@@ -1,9 +1,8 @@
 # GRID
 Reservation system model.
 
-Running version:
-http://env-3633436.j.layershift.co.uk/Grid/
-
+Running version is available:
+<a href="http://env-3633436.j.layershift.co.uk/Grid/" target="_blank">HERE</a>.
 
 # The model
 This is a sample web application representing a simple reservation system.
