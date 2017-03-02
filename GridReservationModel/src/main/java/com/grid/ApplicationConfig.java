@@ -34,6 +34,7 @@ public class ApplicationConfig extends Application {
     private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(com.grid.CORSFilter.class);
         resources.add(com.grid.GridResource.class);
+        resources.add(com.grid.error.IllegalArgumentExceptionMapper.class);
         resources.add(com.grid.error.IllegalStateExceptionMapper.class);
         resources.add(com.grid.error.JSONExceptionMapper.class);
         resources.add(com.grid.error.UnirestExceptionMapper.class);

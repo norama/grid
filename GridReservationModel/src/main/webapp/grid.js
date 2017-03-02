@@ -16,7 +16,7 @@
     
     Vue.component('grid-cell', {
       props: ['NEXT', 'SERVICE', 'STATE', 'cell', 'errors'],
-      template: '<div> \
+      template: '<div v-bind:class="{ disabled: disabled }"> \
       <free-cell-content v-if="state === \'free\'" v-bind:cell="cell" v-bind:next="next" v-bind:free="free"> \
       </free-cell-content> \
       <cell-content v-else-if="state === \'reserved\'" v-bind:cell="cell" v-bind:next="next" v-bind:state="state" inputField="owner" inputDescription="Owner" actionLabel="Take" uiInit="expanded" v-bind:cancel="free"> \
@@ -27,8 +27,9 @@
       
       data: function () {
         return {
-          errors: null
-        }
+            disabled: false,
+            errors: null
+        };
       },
       computed: {
           state: function() {
@@ -46,6 +47,7 @@
             this.serve('free', successCallback, failureCallback);
         },
         serve: function(action, successCallback, failureCallback) {
+            this.disabled = true;
             this.errors = null;
             Vue.http.post(SERVICE + '/' + action,
                            this.cell, {
@@ -54,6 +56,7 @@
                                 }
                             }).then(response => {
                                 console.dir(response); 
+                                this.disabled = false;
                                 this.cell = response.body;
                                 console.dir(this.cell);
                                 if (action == 'take') {
@@ -67,6 +70,7 @@
                                 }
                             }, response => { 
                                 console.dir(response); 
+                                this.disabled = false;
                                 this.errors = response.body.message;
                                 const self = this;
                                 setTimeout(function () { 
@@ -82,7 +86,7 @@
     
     Vue.component('free-cell-content', {
       props: ['cell', 'next'],
-      template: '<button class="grid-cell free" v-on:click="next()" v-bind:title="cell.id"></button>'
+      template: '<button class="grid-cell free" v-on:click="next()" v-bind:title="\'Reserve cell \' + cell.id"></button>'
     });
 
     Vue.component('cell-content', {
@@ -126,21 +130,22 @@
               }
           }
       },
-      template: '<button v-if="ui === \'collapsed\'" v-on:click="expand()" v-bind:class="[\'grid-cell\', state, \'collapsed\']" v-bind:title="cell.id">\
+      template: '<button v-if="ui === \'collapsed\'" v-on:click="expand()" v-bind:class="[\'grid-cell\', state, \'collapsed\']" v-bind:title="actionLabel + \' cell \' + cell.id">\
       <div class="collapsed" v-text="cell.owner"></div>\
       </button>\
-      <div v-else-if="ui === \'expanded\'" v-bind:class="[\'grid-cell\', state, \'expanded\']" v-bind:title="cell.id">\
+      <div v-else-if="ui === \'expanded\'" v-bind:class="[\'grid-cell\', state, \'expanded\']">\
       <a class="x" title="Cancel" v-on:click="cancel()">&times;</a>\
       <form>\
       <input type="text" v-model="userInput" v-bind:class="{ \'input-error\': errors }" name="userInput" size="8" :placeholder="inputDescription"><br>\
-      <div><button type="button" @click="act()">{{ actionLabel }}</button>\
+      <div><button type="button" @click="act()" v-bind:class="{ disabled: disabled }">{{ actionLabel }}</button>\
       </div>\
       </form></div>',
       data: function() {
           return {
+            disabled: false,
             ui: this.uiInit, 
             userInput: null
-          }
+          };
       },
       methods: {
           expand: function(errors) {
@@ -155,9 +160,11 @@
               this.errors = null;
               if (!this.userInput) {
                   const self = this;
+                  self.disabled = true;
                   self.errors = this.inputDescription + ' should not be empty!';
                   setTimeout(function () { 
                       showError(self.errors); 
+                      self.disabled = false;
                   }, 500);
                   return;
               }
@@ -200,7 +207,7 @@
                 this.cells[i] = new Array(this.ncols + 1);
             }
             for (let dbcell of dbcells) {
-                if (dbcell.status == 1) {
+                if (dbcell.status === 1) {
                     // replace 'reserved' by 'taken'
                     dbcell.status = 2; 
                 }

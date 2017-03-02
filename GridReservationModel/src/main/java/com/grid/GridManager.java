@@ -145,7 +145,11 @@ public class GridManager {
         if (status == 2) {
             throw new IllegalStateException("Cell " + cellId + " has already been taken.");
         }
-        JSONObject changes = new JSONObject().put("status", 2).put("owner", clientCell.getOwner());
+        String owner = clientCell.getOwner();
+        if (owner == null || owner.trim().isEmpty()) {
+            throw new IllegalArgumentException("Owner should not be empty!");
+        }
+        JSONObject changes = new JSONObject().put("status", 2).put("owner", owner.trim());
         if (status == 0) {
             String ticket = UUID.randomUUID().toString();
             changes.put("ticket", ticket);
@@ -173,7 +177,7 @@ public class GridManager {
         if (validTicket(cell, clientCell)) {
             return update(cellId, new JSONObject().put("status", 0).put("ticket", JSONObject.NULL).put("owner", JSONObject.NULL).put("remark", JSONObject.NULL), token);
         } else {
-            throw new IllegalStateException("Invalid ticket for cell " + cellId + " .");
+            throw new IllegalStateException("Invalid ticket for cell " + cellId + ".");
         }
 
     }
