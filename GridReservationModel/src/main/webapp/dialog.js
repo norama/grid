@@ -2,10 +2,10 @@
  * https://github.com/nakupanda/bootstrap3-dialog
  */
 
-function showInfo(msg) {
+function showInfo(msg, title) {
     BootstrapDialog.show({
                 type: BootstrapDialog.TYPE_INFO,
-                title: 'info',
+                title: title ? title : 'Info',
                 message: msg,
                 buttons: [okButton()]
             });     
@@ -14,7 +14,7 @@ function showInfo(msg) {
 function showError(msg) {
     BootstrapDialog.show({
                 type: BootstrapDialog.TYPE_DANGER,
-                title: 'error',
+                title: 'Error',
                 message: msg,
                 buttons: [okButton()]
             });     

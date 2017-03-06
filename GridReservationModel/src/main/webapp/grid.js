@@ -62,7 +62,7 @@
                                 if (action == 'take') {
                                     self = this;
                                     setTimeout(function () { 
-                                        showInfo('Ticket: '+self.cell.ticket); 
+                                        showInfo(self.cell.ticket, 'Ticket'); 
                                     }, 500);
                                 } 
                                 if (successCallback) {
