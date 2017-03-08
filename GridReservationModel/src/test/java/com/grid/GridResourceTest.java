@@ -40,7 +40,7 @@ import org.json.JSONObject;
  */
 @EnableServices(value = "jaxrs")
 @RunWith(ApplicationComposer.class)
-//@NotThreadSafe
+@NotThreadSafe
 public class GridResourceTest {
 
     private static final Logger LOGGER = Logger.getLogger("GridResourceTest");
