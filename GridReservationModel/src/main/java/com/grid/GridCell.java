@@ -20,6 +20,7 @@ public final class GridCell {
     private String data;
     private String remark;
     private String modified;
+    private String token;
     
     public GridCell() {
         
@@ -45,6 +46,7 @@ public final class GridCell {
             setStringProp(this::setData, "data", source);
             setStringProp(this::setRemark, "remark", source);
             setStringProp(this::setModified, "modified", source);
+            setStringProp(this::setToken, "token", source);
         } catch (JSONException e) {
             throw new IllegalArgumentException(e);
         }
@@ -202,5 +204,19 @@ public final class GridCell {
         return this;
     }
     
+    /**
+     * @return the token
+     */
+    public String getToken() {
+        return token;
+    }
+
+    /**
+     * @param token the token to set
+     */
+    public GridCell setToken(String token) {
+        this.token = token;
+        return this;
+    }
 
 }

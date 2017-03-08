@@ -5,6 +5,7 @@ import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
@@ -23,7 +24,7 @@ import javax.ws.rs.core.Response;
  * @author Nora Mate
  */
 @ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)
-@Singleton
+@ApplicationScoped
 @Path("app")
 public class GridResource {
 
@@ -39,7 +40,6 @@ public class GridResource {
         gridManager = new GridManager();
     }
 
-    
     @GET
     @Lock(LockType.READ)
     @Produces(MediaType.APPLICATION_JSON)
@@ -52,6 +52,30 @@ public class GridResource {
             gridManager.closeSession(token);
         }
     }
+    
+    @POST
+    @Path("open")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response open(GridCell clientCell) throws UnirestException, JSONException {
+        String token = gridManager.openSession();
+        return response(clientCell, token);
+    }    
+
+    @POST
+    @Path("close")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response close(GridCell clientCell) throws UnirestException, JSONException {
+        String token = clientCell.getToken();
+        if (token != null) {
+            gridManager.closeSession(token);
+            clientCell.setToken(null);
+            return Response.ok(clientCell).build();
+        } else {
+            throw new IllegalArgumentException("No token stored in cell.");
+        }
+    }    
 
     @POST
     @Lock(LockType.WRITE)
@@ -59,12 +83,15 @@ public class GridResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response reserve(GridCell clientCell) throws UnirestException, JSONException {
-        String token = gridManager.openSession();
+        String clientToken = clientCell.getToken();
+        String token = clientToken == null ? gridManager.openSession() : clientToken;
         try {
             GridCell cell = gridManager.reserve(clientCell, token);
-            return Response.ok(cell).build();
+            return response(cell, clientToken);
         } finally {
-            gridManager.closeSession(token);
+            if (clientToken == null) {
+                gridManager.closeSession(token);
+            }
         }
     }
 
@@ -74,12 +101,15 @@ public class GridResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response take(GridCell clientCell) throws UnirestException, JSONException {
-        String token = gridManager.openSession();
+        String clientToken = clientCell.getToken();
+        String token = clientToken == null ? gridManager.openSession() : clientToken;
         try {
             GridCell cell = gridManager.take(clientCell, token);
-            return Response.ok(cell).build();
+            return response(cell, clientToken);
         } finally {
-            gridManager.closeSession(token);
+            if (clientToken == null) {
+                gridManager.closeSession(token);
+            }
         }
     }
 
@@ -89,13 +119,15 @@ public class GridResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response free(GridCell clientCell) throws UnirestException, JSONException {
-        String token = gridManager.openSession();
-
+        String clientToken = clientCell.getToken();
+        String token = clientToken == null ? gridManager.openSession() : clientToken;
         try {
             GridCell cell = gridManager.free(clientCell, token);
-            return Response.ok(cell).build();
+            return response(cell, clientToken);
         } finally {
-            gridManager.closeSession(token);
+            if (clientToken == null) {
+                gridManager.closeSession(token);
+            }
         }
     }
 
@@ -105,13 +137,19 @@ public class GridResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response validate(GridCell clientCell) throws UnirestException, JSONException {
-        String token = gridManager.openSession();
-
+        String clientToken = clientCell.getToken();
+        String token = clientToken == null ? gridManager.openSession() : clientToken;
         try {
             GridCell cell = gridManager.validate(clientCell, token);
-            return Response.ok(cell).build();
+            return response(cell, clientToken);
         } finally {
-            gridManager.closeSession(token);
+            if (clientToken == null) {
+                gridManager.closeSession(token);
+            }
         }
+    }
+    
+    private static Response response(GridCell cell, String token) {
+        return Response.ok(cell.setToken(token)).build();
     }
 }

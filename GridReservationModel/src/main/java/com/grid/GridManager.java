@@ -66,6 +66,18 @@ public class GridManager {
         Assert.isTrue(json.has("session_token"), "session_token is missing:\n" + json.toString(4));
         return json.getString("session_token");
     }
+    
+    public String refreshToken(String token) throws UnirestException, JSONException {
+        HttpResponse<JsonNode> jsonResponse = Unirest.put(HOST + ROOT + SESSION)
+                .header("accept", "application/json")
+                .header(DF_API_KEY_NAME, DF_API_KEY_VALUE)
+                .header(DF_SESSION_TOKEN_NAME, token)
+                .asJson();
+
+        JSONObject json = getJson(jsonResponse.getBody());
+        Assert.isTrue(json.has("session_token"), "session_token is missing:\n" + json.toString(4));
+        return json.getString("session_token");       
+    }
 
     public void closeSession(String token) throws UnirestException, JSONException {
         HttpResponse<JsonNode> jsonResponse = Unirest.delete(HOST + ROOT + SESSION)
@@ -131,8 +143,7 @@ public class GridManager {
         GridCell cell = get(cellId, token);
         if (cell.getStatus() == 0) {
             String ticket = UUID.randomUUID().toString();
-            cell = update(cellId, new JSONObject().put("status", 1).put("ticket", ticket), token);
-            return cell.setTicket(ticket);
+            return update(cellId, new JSONObject().put("status", 1).put("ticket", ticket), token);
         } else {
             throw new IllegalStateException("Cell " + cellId + " is not free.");
         }
