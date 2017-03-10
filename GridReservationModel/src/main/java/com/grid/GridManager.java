@@ -186,6 +186,8 @@ public class GridManager {
         if (status == 0) {
             String ticket = UUID.randomUUID().toString();
             changes.put("ticket", ticket);
+        } else if (!validTicket(cell, clientCell)) {
+            throw new IllegalStateException("Invalid ticket for cell " + cellId + ".");
         }
         return update(cellId, changes, token);
     }

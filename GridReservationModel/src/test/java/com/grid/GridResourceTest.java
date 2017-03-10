@@ -12,7 +12,6 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Logger;
 import javax.enterprise.context.ApplicationScoped;
 import org.apache.http.annotation.NotThreadSafe;
@@ -27,9 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
-import org.apache.openejb.jee.WebApp;
 import org.apache.openejb.testing.Classes;
-import org.apache.openejb.testing.Configuration;
 import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
 import org.codehaus.jackson.xc.JaxbAnnotationIntrospector;
 import org.json.JSONArray;
@@ -47,9 +44,9 @@ public class GridResourceTest {
     private static final Logger LOGGER = Logger.getLogger("GridResourceTest");
 
     private static final String SERVICE_URL = "http://localhost:4204/GridResourceTest/app/";
-    
-    private static final String RESET_API_KEY = "a8742de9172f34171c086fa9c5c7090c46e570e4bc32758a55088b63a0fc77ee";
 
+    private static final String RESET_API_KEY = "a8742de9172f34171c086fa9c5c7090c46e570e4bc32758a55088b63a0fc77ee";
+    
     @Module
     @ApplicationScoped
     @Classes(cdi = true, value = {ApplicationConfig.class, JacksonJaxbJsonProvider.class, JaxbAnnotationIntrospector.class, GridResource.class})
@@ -74,7 +71,7 @@ public class GridResourceTest {
     public void setUp() throws InterruptedException, UnirestException {
         // Avoid "token blacklisted" error
         Thread.sleep(1000);
-        
+
         // reset grid
         resetGrid();
     }
@@ -82,7 +79,7 @@ public class GridResourceTest {
     @After
     public void tearDown() {
     }
-    
+
     private void resetGrid() throws UnirestException {
         HttpResponse<String> jsonResponse = Unirest.put(SERVICE_URL + "reset")
                 .header("Content-Type", "text/plain")
@@ -109,39 +106,95 @@ public class GridResourceTest {
         assertEquals(12, cells.size());
         cells.forEach(c -> assertEquals(0, c.getStatus()));
     }
-    
+
     @Test
     public void reserve() throws Exception {
 
         GridCell cell = open(11);
-        
-        cell = reserve(cell);
-        
-        close(cell);
+
+        try {
+
+            cell = reserve(cell);
+
+        } finally {
+            close(cell);
+        }
     }
-    
+
     @Test
     public void take() throws Exception {
 
         GridCell cell = open(12);
-        
-        // take from reserved state
-        
-        cell = reserve(cell);
-                
-        cell = take(cell);
-        
-        // free for next step
 
-        cell = free(cell);
-        
-        // take from free state
-        
-        cell = take(cell);
-        
-        close(cell);
-    }    
-    
+        try {
+
+            // take from reserved state
+            cell = reserve(cell);
+
+            cell = take(cell);
+
+            // free for next step
+            cell = free(cell);
+
+            // take from free state
+            cell = take(cell);
+
+        } finally {
+            close(cell);
+        }
+    }
+
+    @Test(expected = UnirestException.class)
+    public void steal1() throws Exception {
+              
+        GridCell cell = open(13);
+
+        try {
+            cell = reserve(cell);
+
+            cell.setTicket("invalid");
+
+            cell = free(cell);
+            
+        } finally {
+            close(cell);
+        }
+    }
+
+    @Test(expected = UnirestException.class)
+    public void steal2() throws Exception {
+              
+        GridCell cell = open(13);
+
+        try {
+            cell = take(cell);
+
+            cell.setTicket("invalid");
+
+            cell = free(cell);
+            
+        } finally {
+            close(cell);
+        }
+    }
+
+    @Test(expected = UnirestException.class)
+    public void steal3() throws Exception {
+              
+        GridCell cell = open(13);
+
+        try {
+            cell = reserve(cell);
+
+            cell.setTicket("invalid");
+
+            cell = take(cell);
+            
+        } finally {
+            close(cell);
+        }
+    }
+
     private GridCell open(int id) throws Exception {
         HttpResponse<JsonNode> jsonResponse = Unirest.post(SERVICE_URL + "open")
                 .header("Content-Type", "application/json")
@@ -155,7 +208,7 @@ public class GridResourceTest {
         assertEquals(0, cell.getStatus());
         return cell;
     }
-    
+
     private GridCell close(GridCell cell) throws Exception {
         HttpResponse<JsonNode> jsonResponse = Unirest.post(SERVICE_URL + "close")
                 .header("Content-Type", "application/json")
@@ -168,7 +221,6 @@ public class GridResourceTest {
         return cell;
     }
 
-    
     private GridCell reserve(GridCell cell) throws Exception {
         HttpResponse<JsonNode> jsonResponse = Unirest.post(SERVICE_URL + "reserve")
                 .header("Content-Type", "application/json")
@@ -198,7 +250,7 @@ public class GridResourceTest {
         return cell;
     }
 
-    private GridCell free(GridCell cell) throws Exception {
+    private GridCell free(GridCell cell) throws Exception {        
         HttpResponse<JsonNode> jsonResponse = Unirest.post(SERVICE_URL + "free")
                 .header("Content-Type", "application/json")
                 .header("accept", "application/json")
