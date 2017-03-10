@@ -6,7 +6,6 @@ import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Singleton;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Produces;
@@ -14,6 +13,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.core.MediaType;
 import org.json.JSONException;
 import javax.ws.rs.core.Response;
@@ -131,7 +131,7 @@ public class GridResource {
         }
     }
 
-    @POST
+    @GET
     @Lock(LockType.READ)
     @Path("validate")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -147,6 +147,20 @@ public class GridResource {
                 gridManager.closeSession(token);
             }
         }
+    }
+    
+    /**
+     * For testing, internal use only.
+     * Requires api key in body.
+     */
+    @PUT
+    @Lock(LockType.WRITE)
+    @Path("reset")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response freeGrid(String apiKey) throws UnirestException, JSONException {
+        gridManager.freeGrid(apiKey);
+        return Response.ok().build();
     }
     
     private static Response response(GridCell cell, String token) {

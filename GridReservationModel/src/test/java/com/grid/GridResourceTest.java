@@ -9,6 +9,7 @@ import static com.grid.GridManager.getJson;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -46,6 +47,8 @@ public class GridResourceTest {
     private static final Logger LOGGER = Logger.getLogger("GridResourceTest");
 
     private static final String SERVICE_URL = "http://localhost:4204/GridResourceTest/app/";
+    
+    private static final String RESET_API_KEY = "a8742de9172f34171c086fa9c5c7090c46e570e4bc32758a55088b63a0fc77ee";
 
     @Module
     @ApplicationScoped
@@ -68,13 +71,26 @@ public class GridResourceTest {
     }
 
     @Before
-    public void setUp() throws InterruptedException {
+    public void setUp() throws InterruptedException, UnirestException {
         // Avoid "token blacklisted" error
         Thread.sleep(1000);
+        
+        // reset grid
+        resetGrid();
     }
 
     @After
     public void tearDown() {
+    }
+    
+    private void resetGrid() throws UnirestException {
+        HttpResponse<String> jsonResponse = Unirest.put(SERVICE_URL + "reset")
+                .header("Content-Type", "text/plain")
+                .header("accept", "text/plain")
+                .body(RESET_API_KEY)
+                .asString();
+
+        assertEquals(200, jsonResponse.getStatus());
     }
 
     @Test
@@ -84,7 +100,7 @@ public class GridResourceTest {
                 .header("accept", "application/json")
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
 
         JSONArray array = json.getJSONArray("cells");
         List<GridCell> cells = new ArrayList<>();
@@ -93,15 +109,13 @@ public class GridResourceTest {
         assertEquals(12, cells.size());
         cells.forEach(c -> assertEquals(0, c.getStatus()));
     }
-
+    
     @Test
     public void reserve() throws Exception {
 
         GridCell cell = open(11);
         
         cell = reserve(cell);
-
-        free(cell);
         
         close(cell);
     }
@@ -111,19 +125,19 @@ public class GridResourceTest {
 
         GridCell cell = open(12);
         
-        cell = reserve(cell);
-        
         // take from reserved state
         
+        cell = reserve(cell);
+                
         cell = take(cell);
+        
+        // free for next step
 
         cell = free(cell);
         
         // take from free state
         
         cell = take(cell);
-
-        free(cell);   
         
         close(cell);
     }    
@@ -135,7 +149,7 @@ public class GridResourceTest {
                 .body(new JSONObject().put("id", id))
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         LOGGER.info(json.toString(4));
         GridCell cell = new GridCell().init(json);
         assertEquals(0, cell.getStatus());
@@ -149,7 +163,7 @@ public class GridResourceTest {
                 .body(new JSONObject().put("id", cell.getId()).put("token", cell.getToken()))
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         LOGGER.info(json.toString(4));
         return cell;
     }
@@ -162,7 +176,7 @@ public class GridResourceTest {
                 .body(new JSONObject().put("id", cell.getId()).put("token", cell.getToken()))
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         LOGGER.info(json.toString(4));
         cell = new GridCell().init(json);
         assertEquals(1, cell.getStatus());
@@ -176,7 +190,7 @@ public class GridResourceTest {
                 .body(new JSONObject().put("id", cell.getId()).put("owner", "Jack").put("ticket", cell.getTicket()).put("token", cell.getToken()))
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         LOGGER.info(json.toString(4));
         cell = new GridCell().init(json);
         assertEquals(2, cell.getStatus());
@@ -191,7 +205,7 @@ public class GridResourceTest {
                 .body(new JSONObject().put("id", cell.getId()).put("ticket", cell.getTicket()).put("token", cell.getToken()))
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         LOGGER.info(json.toString(4));
         cell = new GridCell().init(json);
         assertEquals(0, cell.getStatus());

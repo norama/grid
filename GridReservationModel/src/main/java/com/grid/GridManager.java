@@ -23,7 +23,7 @@ public class GridManager {
 
     private static final Logger LOGGER = Logger.getLogger("GridManager");
 
-    private static final String DF_API_KEY_NAME = "X-DreamFactory-Api-Key";
+    static final String DF_API_KEY_NAME = "X-DreamFactory-Api-Key";
     private static final String DF_API_KEY_VALUE = "36fda24fe5588fa4285ac6c6c2fdfbdb6b6bc9834699774c9bf777f706d05a88";
 
     private static final String DF_SESSION_TOKEN_NAME = "X-DreamFactory-Session-Token";
@@ -34,20 +34,31 @@ public class GridManager {
     private static final String SESSION = "/user/session";
     private static final String GRID = "/pg/_table/grid";
 
-    static JSONObject loginData(int seconds) throws JSONException {
+    private static JSONObject loginData(int seconds) throws JSONException {
         return new JSONObject()
                 .put("email", "smtp.dreamfactory@gmail.com")
                 .put("password", "pguser")
                 .put("duration", seconds);
     }
 
-    static JSONObject getJson(JsonNode body) throws UnirestException, JSONException {
+    static JSONObject getJson(HttpResponse<JsonNode> jsonResponse) throws UnirestException, JSONException {
+        JsonNode body = jsonResponse.getBody();
         JSONObject json = body.getObject();
         //LOGGER.info(json.toString(4));
-        if (json.has("error")) {
-            throw new UnirestException(json.getJSONObject("error").getString("message"));
+        if (jsonResponse.getStatus() != 200) {
+            String msg = json.has("error") ? json.getJSONObject("error").getString("message") : json.toString(4);
+            throw new UnirestException(msg);
         }
         return json;
+    }
+    
+    private static JSONObject freeGridChanges() {
+        return new JSONObject()
+                .put("resource", new JSONArray().put(new JSONObject()
+                        .put("status", 0)
+                        .put("owner", JSONObject.NULL)
+                        .put("ticket", JSONObject.NULL)))
+                .put("filter", "status <> 0");
     }
 
     public String openSession() throws UnirestException, JSONException {
@@ -62,11 +73,11 @@ public class GridManager {
                 .body(loginData(seconds))
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         Assert.isTrue(json.has("session_token"), "session_token is missing:\n" + json.toString(4));
         return json.getString("session_token");
     }
-    
+
     public String refreshToken(String token) throws UnirestException, JSONException {
         HttpResponse<JsonNode> jsonResponse = Unirest.put(HOST + ROOT + SESSION)
                 .header("accept", "application/json")
@@ -74,9 +85,9 @@ public class GridManager {
                 .header(DF_SESSION_TOKEN_NAME, token)
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         Assert.isTrue(json.has("session_token"), "session_token is missing:\n" + json.toString(4));
-        return json.getString("session_token");       
+        return json.getString("session_token");
     }
 
     public void closeSession(String token) throws UnirestException, JSONException {
@@ -86,7 +97,7 @@ public class GridManager {
                 .header(DF_SESSION_TOKEN_NAME, token)
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         Assert.isTrue(json.has("success"), "Could not close session:\n" + json.toString(4));
         Assert.isTrue(json.getBoolean("success"), "Could not close session:\n" + json.toString(4));
     }
@@ -99,7 +110,7 @@ public class GridManager {
                 .header(DF_SESSION_TOKEN_NAME, token)
                 .asJson();
 
-        return new GridCell().init(getJson(jsonResponse.getBody()));
+        return new GridCell().init(getJson(jsonResponse));
     }
 
     GridCell update(int cellId, JSONObject changes, String token) throws UnirestException, JSONException {
@@ -112,7 +123,18 @@ public class GridManager {
                 .body(changes)
                 .asJson();
 
-        return new GridCell().init(getJson(jsonResponse.getBody()));
+        return new GridCell().init(getJson(jsonResponse));
+    }
+
+    void freeGrid(String apiKey) throws UnirestException, JSONException {
+        HttpResponse<JsonNode> jsonResponse = Unirest.put(HOST + ROOT + GRID)
+                .header("Content-Type", "application/json")
+                .header("accept", "application/json")
+                .header(DF_API_KEY_NAME, apiKey)
+                .body(freeGridChanges())
+                .asJson();
+
+        Assert.isTrue(jsonResponse.getStatus() == 200, "Error code: "+jsonResponse.getStatus());
     }
 
     Grid getGrid(String token) throws UnirestException, JSONException {
@@ -123,7 +145,7 @@ public class GridManager {
                 .header(DF_SESSION_TOKEN_NAME, token)
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         return toGrid(json);
     }
 
@@ -202,7 +224,7 @@ public class GridManager {
                 .header(DF_SESSION_TOKEN_NAME, token)
                 .asJson();
 
-        JSONObject json = getJson(jsonResponse.getBody());
+        JSONObject json = getJson(jsonResponse);
         freeCells(toGrid(json), token);
     }
 
